@@ -82,7 +82,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   maxHealth: 5
-  routineDelay: 1
+  dropScore: 1
+  routineDelay: 0.5
   collider: {fileID: 4964145765143758219}
   agent: {fileID: 4964145765143758220}
 --- !u!1 &4964145765698230996

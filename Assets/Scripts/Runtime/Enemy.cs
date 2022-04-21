@@ -14,7 +14,7 @@ public class Enemy : MonoBehaviour, IAttackAble
     
     private int curHealth;
 
-    private bool Deaded = false;
+    private bool isDead = false;
     
     private int CurHealth
     {
@@ -23,9 +23,9 @@ public class Enemy : MonoBehaviour, IAttackAble
         {
             curHealth = value;
             
-            if (curHealth < 1 && !Deaded)
+            if (curHealth < 1 && !isDead)
             {
-                Deaded = true;
+                isDead = true;
 
                 collider.enabled = false;
                 
@@ -35,32 +35,26 @@ public class Enemy : MonoBehaviour, IAttackAble
                 GameManager.Instance.AddScore(dropScore);
                 return;
             }
-
-            hitSequence.Restart();
-
-            // itSequence.Play();
-            //
-            // transform.DOScale(Vector3.one, .1f)
-            //     .OnComplete(() =>
-            //         transform.DOScale(Vector3.one * 2, .1f)).Restart();
-            //
-            // enemyMat.DOColor(Color.white, .1f)
-            //     .OnComplete(() =>
-            //         enemyMat.DOColor(Color.red, .1f)).Restart();
         }
     }
     
     
-    [SerializeField] private float routineDelay = 1;
+    [SerializeField] private float routineDelay = .5f;
     [Header("Component")] [SerializeField] private Collider collider;
     [SerializeField] private NavMeshAgent agent;
     private Transform target;
 
     private Sequence hitSequence;
+    private int attackPower = 1;
 
     private void Awake()
     {
-        target = GameObject.FindWithTag("Player").transform;
+        GameObject obj = GameObject.FindWithTag("Player");
+
+        if(obj == null) { return; }
+
+        target = obj.transform;
+        
         
         enemyMat = GetComponentInChildren<Renderer>().material;
         
@@ -75,23 +69,24 @@ public class Enemy : MonoBehaviour, IAttackAble
     {
         curHealth = maxHealth;
         collider.enabled = true;
-        Deaded = false;
+        isDead = false;
         StartCoroutine(EnemyRoutine());
     }
 
     private void OnDisable()
     {
-        Deaded = true;
+        isDead = true;
     }
 
     public void TakeDamage(int damage)
     {
+        hitSequence.Restart();
         CurHealth -= damage;
     }
 
     private void Attack(IAttackAble attackAble)
     {
-        attackAble.TakeDamage(5);
+        attackAble.TakeDamage(attackPower);
     }
 
     private void OnCollisionStay(Collision collision)
@@ -104,9 +99,10 @@ public class Enemy : MonoBehaviour, IAttackAble
 
     private IEnumerator EnemyRoutine()
     {
-        while (!Deaded)
+        while (!isDead)
         {
-            agent.SetDestination(target.position);
+            if(target != null)
+                agent.SetDestination(target.position);
             yield return new WaitForSeconds(routineDelay);
         }
     }

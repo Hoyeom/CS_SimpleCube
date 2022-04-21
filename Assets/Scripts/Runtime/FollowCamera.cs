@@ -6,8 +6,10 @@ using UnityEngine;
 public class FollowCamera : MonoBehaviour
 {
     [SerializeField] private Transform target;
-    private void LateUpdate()
+    private void FixedUpdate()
     {
+        if(target == null) { return; }
+        
         Vector3 pos = target.position;
         pos.y = transform.position.y;
 

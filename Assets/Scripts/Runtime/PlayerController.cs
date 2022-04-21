@@ -39,15 +39,25 @@ public class PlayerController : MonoBehaviour,IAttackAble
 
     private int curHealth;
 
+    private bool isDead;
+
     private int CurHealth
     {
         get => curHealth;
         set
         {
             curHealth = value;
-            if (curHealth < 1)
+
+            
+            if (curHealth < 1 && !isDead)
             {
+                isDead = true;
                 
+                GameManager.Instance.StopGame();
+
+                playerMat.DOColor(Color.clear, 0.3f)
+                    .OnComplete(() => Destroy(gameObject));
+
             }
         }
     }
@@ -73,6 +83,10 @@ public class PlayerController : MonoBehaviour,IAttackAble
         hitSequence.Pause();
         hitSequence.Insert(0, playerMat.DOColor(Color.red, .1f).SetLoops(2, LoopType.Yoyo));
         hitSequence.Insert(0, transform.DOScale(transform.localScale / 2, 0.1f).SetLoops(2, LoopType.Yoyo));
+
+        hitSequence.InsertCallback(hitDelay, () => isDelay = false);
+        
+        GameManager.Instance.StartGame();
     }
 
     private void FixedUpdate()
@@ -127,18 +141,20 @@ public class PlayerController : MonoBehaviour,IAttackAble
         
         isDelay = true;
         
+        hitSequence.Restart();
+
         mainCam.DOShakePosition(0.1f);
         
         CurHealth -= damage;
-
-        playerMat.DOColor(Color.red, hitDelay / 2)
-            .OnComplete(() =>
-                playerMat.DOColor(Color.white, hitDelay / 2)).Restart();
-
-        transform.DOScale(Vector3.one / 2, hitDelay / 2)
-            .OnComplete(() =>
-                transform.DOScale(Vector3.one, hitDelay / 2)
-                    .OnComplete(() => isDelay = false)).Restart();
+        
+        // playerMat.DOColor(Color.red, hitDelay / 2)
+        //     .OnComplete(() =>
+        //         playerMat.DOColor(Color.white, hitDelay / 2)).Restart();
+        //
+        // transform.DOScale(Vector3.one / 2, hitDelay / 2)
+        //     .OnComplete(() =>
+        //         transform.DOScale(Vector3.one, hitDelay / 2)
+        //             .OnComplete(() => isDelay = false)).Restart();
     }
 
     private void Attack(IAttackAble attackAble)
@@ -175,7 +191,7 @@ public class PlayerController : MonoBehaviour,IAttackAble
                 contextVector.x = Mathf.Abs(contextVector.x);
                 contextVector.z = Mathf.Abs(contextVector.z);
 
-                transform.DOScale(Vector3.one + contextVector / 2, .1f)
+                transform.DOScale(transform.localScale + contextVector / 2, .1f)
                     .OnComplete(() =>
                         transform.DOScale(Vector3.one, .1f)).Restart();
                 
