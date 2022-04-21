@@ -26,7 +26,9 @@ public class Enemy : MonoBehaviour, IAttackAble
             if (curHealth < 1 && !isDead)
             {
                 isDead = true;
-
+                
+                AudioManager.Instance.EnemyDeadSound();
+                
                 collider.enabled = false;
                 
                 enemyMat.DOColor(new Color(1, 0, 0 ,0), .3f)
@@ -35,6 +37,8 @@ public class Enemy : MonoBehaviour, IAttackAble
                 GameManager.Instance.AddScore(dropScore);
                 return;
             }
+            
+            AudioManager.Instance.EnemyTakeDamageSound();
         }
     }
     
@@ -80,6 +84,8 @@ public class Enemy : MonoBehaviour, IAttackAble
 
     public void TakeDamage(int damage)
     {
+        
+        
         hitSequence.Restart();
         CurHealth -= damage;
     }

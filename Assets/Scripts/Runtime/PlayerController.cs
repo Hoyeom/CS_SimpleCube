@@ -15,7 +15,7 @@ public class PlayerController : MonoBehaviour,IAttackAble
     [SerializeField] private Transform fireRig;
     [SerializeField] private GameObject projectilePrefab;
     [SerializeField] private float projectileSpeed = 3;
-    
+
     private Transform firePoint;
 
     private Camera mainCam;
@@ -36,36 +36,43 @@ public class PlayerController : MonoBehaviour,IAttackAble
 
     [SerializeField] private LayerMask groundLayer;
     [SerializeField] private int maxHealth = 5;
+    [SerializeField] private float speed = 3;
 
     private int curHealth;
 
     private bool isDead;
 
+    private Sequence hitSequence;
+
+    public event Action OnFireBullet;
+    public event Action OnTakeDamaged;
+    public event Action OnDeaded;
+    
+    
     private int CurHealth
     {
         get => curHealth;
         set
         {
             curHealth = value;
-
-            
             if (curHealth < 1 && !isDead)
             {
                 isDead = true;
+                
+                OnDeaded?.Invoke();
                 
                 GameManager.Instance.StopGame();
 
                 playerMat.DOColor(Color.clear, 0.3f)
                     .OnComplete(() => Destroy(gameObject));
-
+                return;
             }
+            OnTakeDamaged?.Invoke();
         }
     }
     
 
-    [SerializeField] private float speed = 3;
 
-    private Sequence hitSequence;
 
     private void Awake()
     {
@@ -105,7 +112,9 @@ public class PlayerController : MonoBehaviour,IAttackAble
         if (!Mouse.current.leftButton.isPressed) return;
         
         if(Time.time < lastFireDelay + fireDelay) { return; }
-            
+        
+        OnFireBullet?.Invoke();
+        
         lastFireDelay = Time.time;
             
         firePoint.DOScaleY(1, 0.1f)
@@ -200,5 +209,11 @@ public class PlayerController : MonoBehaviour,IAttackAble
                 
                 break;
         }
+    }
+
+
+    public void ExitInput(InputAction.CallbackContext context)
+    {
+        Application.Quit();
     }
 }
