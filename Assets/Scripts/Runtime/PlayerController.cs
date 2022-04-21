@@ -1,6 +1,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using Cinemachine;
 using DG.Tweening;
 using Runtime;
 using UnityEngine;
@@ -25,6 +26,9 @@ public class PlayerController : MonoBehaviour,IAttackAble
 
     private Vector3 viewDir;
 
+    private float lastFireDelay;
+    private float fireDelay = .2f;
+    
     private int attackPower = 1;
 
     private float hitDelay = 0.5f;
@@ -32,6 +36,7 @@ public class PlayerController : MonoBehaviour,IAttackAble
 
     [SerializeField] private LayerMask groundLayer;
     [SerializeField] private int maxHealth = 5;
+
     private int curHealth;
 
     private int CurHealth
@@ -40,11 +45,17 @@ public class PlayerController : MonoBehaviour,IAttackAble
         set
         {
             curHealth = value;
+            if (curHealth < 1)
+            {
+                
+            }
         }
     }
     
 
     [SerializeField] private float speed = 3;
+
+    private Sequence hitSequence;
 
     private void Awake()
     {
@@ -53,8 +64,15 @@ public class PlayerController : MonoBehaviour,IAttackAble
         firePoint = fireRig.GetChild(0);
         
         mainCam = Camera.main;
+        
         playerMat = GetComponentInChildren<Renderer>().material;
         playerMat.EnableKeyword("_EMISSION");
+        
+        hitSequence = DOTween.Sequence();
+        hitSequence.SetAutoKill(false);
+        hitSequence.Pause();
+        hitSequence.Insert(0, playerMat.DOColor(Color.red, .1f).SetLoops(2, LoopType.Yoyo));
+        hitSequence.Insert(0, transform.DOScale(transform.localScale / 2, 0.1f).SetLoops(2, LoopType.Yoyo));
     }
 
     private void FixedUpdate()
@@ -65,6 +83,31 @@ public class PlayerController : MonoBehaviour,IAttackAble
     private void Update()
     {
         LookAtMouse();
+        AutoFire();
+    }
+
+    private void AutoFire()
+    {
+        if (!Mouse.current.leftButton.isPressed) return;
+        
+        if(Time.time < lastFireDelay + fireDelay) { return; }
+            
+        lastFireDelay = Time.time;
+            
+        firePoint.DOScaleY(1, 0.1f)
+            .OnComplete(() =>   
+                firePoint.DOScaleY(0.5f, 0.1f)).Restart();
+                
+        GameObject obj = Instantiate(projectilePrefab, firePoint.position, fireRig.rotation);
+
+        Projectile projectile = obj.GetComponent<Projectile>(); 
+                
+        projectile.GetRigidbody().velocity = fireRig.forward * projectileSpeed;
+
+        projectile.OnHitObject += Attack;
+        projectile.OnDestroyProjectile += ProjectileDestroyed;
+
+        Destroy(obj, 5);
     }
 
     private void LookAtMouse()
@@ -83,6 +126,8 @@ public class PlayerController : MonoBehaviour,IAttackAble
         if (isDelay) { return; }
         
         isDelay = true;
+        
+        mainCam.DOShakePosition(0.1f);
         
         CurHealth -= damage;
 
@@ -107,31 +152,6 @@ public class PlayerController : MonoBehaviour,IAttackAble
         projectile.OnDestroyProjectile -= ProjectileDestroyed;
     }
 
-    public void FireInput(InputAction.CallbackContext context)
-    {
-        switch (context.phase)
-        {
-            case InputActionPhase.Started:
-
-                firePoint.DOScaleY(1, 0.1f)
-                    .OnComplete(() =>   
-                        firePoint.DOScaleY(0.5f, 0.1f)).Restart();
-                
-                GameObject obj = Instantiate(projectilePrefab, firePoint.position, fireRig.rotation);
-
-                Projectile projectile = obj.GetComponent<Projectile>(); 
-                
-                projectile.GetRigidbody().velocity = fireRig.forward * projectileSpeed;
-
-                projectile.OnHitObject += Attack;
-                projectile.OnDestroyProjectile += ProjectileDestroyed;
-
-                Destroy(obj, 5);
-                
-                break;
-        }
-    }
-    
     public void MoveInput(InputAction.CallbackContext context)
     {
         Vector3 contextVector = context.ReadValue<Vector2>();
